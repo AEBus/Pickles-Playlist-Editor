@@ -63,7 +63,7 @@ namespace Pickles_Playlist_Editor
                 var rootContent = new PlaylistNodeContent
                 {
                     Name = "Playlists",
-                    DisplayText = "Playlists",
+                    DisplayText = AppStrings.Tree_PlaylistsRoot,
                     Level = 0,
                     IconGlyph = PlaylistNodeContent.RootGlyph,
                     IsExpanded = true

@@ -21,6 +21,8 @@ namespace Pickles_Playlist_Editor
             {
                 TryRunVelopack();
 
+                ApplyLanguageOverride();
+
                 global::WinRT.ComWrappersSupport.InitializeComWrappers();
                 global::Microsoft.UI.Xaml.Application.Start((p) =>
                 {
@@ -42,6 +44,22 @@ namespace Pickles_Playlist_Editor
             {
                 LogCrash("Main: " + ex);
                 global::System.Environment.Exit(1);
+            }
+        }
+
+        // Applies the saved UI language override before any XAML/resources load.
+        // Empty setting falls back to the system language.
+        static void ApplyLanguageOverride()
+        {
+            try
+            {
+                string lang = Settings.Language;
+                if (!string.IsNullOrWhiteSpace(lang))
+                    global::Microsoft.Windows.Globalization.ApplicationLanguages.PrimaryLanguageOverride = lang;
+            }
+            catch (Exception ex)
+            {
+                LogCrash("Language override: " + ex);
             }
         }
 

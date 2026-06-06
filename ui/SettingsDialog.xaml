@@ -12,6 +12,18 @@
     <ScrollViewer VerticalScrollBarVisibility="Auto">
     <StackPanel Spacing="8" MinWidth="500">
 
+        <TextBlock x:Uid="LanguageLabel" Text="Language" FontWeight="SemiBold"/>
+        <ComboBox x:Name="LanguageComboBox" HorizontalAlignment="Stretch">
+            <ComboBoxItem x:Uid="LanguageItem_System" Content="System Default" Tag=""/>
+            <ComboBoxItem Content="English"    Tag="en-US"/>
+            <ComboBoxItem Content="Deutsch"    Tag="de-DE"/>
+            <ComboBoxItem Content="Español"    Tag="es-ES"/>
+            <ComboBoxItem Content="Français"   Tag="fr-FR"/>
+            <ComboBoxItem Content="Nederlands" Tag="nl-NL"/>
+            <ComboBoxItem Content="Svenska"    Tag="sv-SE"/>
+            <ComboBoxItem Content="简体中文"    Tag="zh-Hans"/>
+        </ComboBox>
+
         <TextBlock x:Uid="ModDirLabel" Text="Mod Directory in Penumbra" FontWeight="SemiBold"/>
         <Grid>
             <Grid.ColumnDefinitions>

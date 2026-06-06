@@ -31,6 +31,7 @@ namespace Pickles_Playlist_Editor
                 AutoReloadCheckBox.IsChecked = Settings.AutoReloadMod;
                 FadeBackgroundMusicCheckBox.IsChecked = Settings.FadeBackgroundMusic;
                 BusNumberComboBox.SelectedIndex = BusNumberToIndex(Settings.BusNumber);
+                SelectCurrentLanguage();
                 ValidateFields();
             }
             catch (Exception e) {
@@ -129,6 +130,26 @@ namespace Pickles_Playlist_Editor
         private static int IndexToBusNumber(int index) =>
             (index >= 0 && index < IndexToBusMap.Length) ? IndexToBusMap[index] : 0;
 
+        // Selects the ComboBox item whose Tag matches the saved language tag
+        // (falls back to "System Default" at index 0).
+        private void SelectCurrentLanguage()
+        {
+            string current = Settings.Language ?? string.Empty;
+            foreach (var obj in LanguageComboBox.Items)
+            {
+                if (obj is ComboBoxItem item
+                    && string.Equals((item.Tag as string) ?? string.Empty, current, StringComparison.OrdinalIgnoreCase))
+                {
+                    LanguageComboBox.SelectedItem = item;
+                    return;
+                }
+            }
+            LanguageComboBox.SelectedIndex = 0;
+        }
+
+        private string SelectedLanguageTag =>
+            (LanguageComboBox.SelectedItem as ComboBoxItem)?.Tag as string ?? string.Empty;
+
         private void OkButton_Click(ContentDialog sender, ContentDialogButtonClickEventArgs args)
         {
             string path = DirectoryPathTextBox.Text.TrimEnd('\\', '/');
@@ -148,6 +169,47 @@ namespace Pickles_Playlist_Editor
             Settings.AutoReloadMod = AutoReloadCheckBox.IsChecked == true;
             Settings.FadeBackgroundMusic = FadeBackgroundMusicCheckBox.IsChecked == true;
             Settings.BusNumber = IndexToBusNumber(BusNumberComboBox.SelectedIndex);
+
+            string newLanguage = SelectedLanguageTag;
+            bool languageChanged = !string.Equals(newLanguage, Settings.Language ?? string.Empty, StringComparison.OrdinalIgnoreCase);
+            Settings.Language = newLanguage;
+            if (languageChanged)
+            {
+                try
+                {
+                    Microsoft.Windows.Globalization.ApplicationLanguages.PrimaryLanguageOverride = newLanguage;
+                }
+                catch { }
+                PromptRestartForLanguage();
+            }
+        }
+
+        private void PromptRestartForLanguage()
+        {
+            var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(App.MainWindow);
+            int result = MessageBox(hwnd,
+                AppStrings.Dlg_RestartRequired_Content,
+                AppStrings.Dlg_RestartRequired_Title,
+                0x00000004 | 0x00000040); // MB_YESNO | MB_ICONINFORMATION
+            if (result != 6) // not IDYES
+                return;
+
+            try
+            {
+                Microsoft.Windows.AppLifecycle.AppInstance.Restart(string.Empty);
+            }
+            catch
+            {
+                // Fall back to a manual relaunch if the lifecycle restart is unavailable.
+                try
+                {
+                    string exe = Environment.ProcessPath;
+                    if (!string.IsNullOrEmpty(exe))
+                        System.Diagnostics.Process.Start(exe);
+                }
+                catch { }
+                Microsoft.UI.Xaml.Application.Current.Exit();
+            }
         }
 
         [DllImport("user32.dll", CharSet = CharSet.Unicode)]

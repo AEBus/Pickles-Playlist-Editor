@@ -371,6 +371,23 @@ namespace Pickles_Playlist_Editor
         }
 
         /// <summary>
+        /// BCP-47 language tag overriding the UI language (e.g. "en-US", "zh-Hans").
+        /// Empty string means follow the system language. Default: "".
+        /// </summary>
+        public static string Language
+        {
+            get => (string)Registry.CurrentUser.OpenSubKey(s_subKey)?.GetValue("Language", "") ?? "";
+            set
+            {
+                using var key = Registry.CurrentUser.CreateSubKey(s_subKey);
+                if (string.IsNullOrWhiteSpace(value))
+                    key?.DeleteValue("Language", throwOnMissingValue: false);
+                else
+                    key?.SetValue("Language", value.Trim());
+            }
+        }
+
+        /// <summary>
         /// Volume percentage applied to SCD output (1–100).
         /// Default: 100.
         /// </summary>
