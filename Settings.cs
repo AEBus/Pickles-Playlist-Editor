@@ -416,7 +416,7 @@ namespace Pickles_Playlist_Editor
         /// <summary>
         /// Loudness target for volume normalization as a 1–100 slider value
         /// (1 = quiet, 100 = loudest). Maps to a LUFS target via
-        /// <see cref="NormalizationLoudnessLufs"/>. Default: 70.
+        /// <see cref="NormalizationLoudnessLufs"/>. Default: 95.
         /// </summary>
         public static int NormalizationLoudness
         {
@@ -424,13 +424,13 @@ namespace Pickles_Playlist_Editor
             {
                 try
                 {
-                    var value = Registry.CurrentUser.OpenSubKey(s_subKey)?.GetValue("NormalizationLoudness", 70);
+                    var value = Registry.CurrentUser.OpenSubKey(s_subKey)?.GetValue("NormalizationLoudness", 95);
                     if (value is int iv && iv >= 1 && iv <= 100) return iv;
                     if (value is long lv && lv >= 1 && lv <= 100) return (int)lv;
                     if (value is string sv && int.TryParse(sv, out var parsed) && parsed >= 1 && parsed <= 100) return parsed;
                 }
                 catch { }
-                return 70;
+                return 95;
             }
             set
             {
@@ -447,6 +447,16 @@ namespace Pickles_Playlist_Editor
         /// </summary>
         public static double NormalizationLoudnessLufs
             => -24.0 + (NormalizationLoudness - 1) * 19.0 / 99.0;
+
+        /// <summary>
+        /// The true-peak ceiling (dBTP) passed to FFmpeg's loudnorm filter. Scales
+        /// with the <see cref="NormalizationLoudness"/> slider so quieter targets keep
+        /// a comfortable -1.5 dB of headroom while the loudest setting pushes the
+        /// ceiling up to -0.3 dBTP (effectively maximizing peak level like Audacity's
+        /// Normalize + Amplify), leaving just enough margin to avoid clipping.
+        /// </summary>
+        public static double NormalizationTruePeak
+            => -1.5 + (NormalizationLoudness - 1) * 1.2 / 99.0;
 
         public static (int Width, int Height) WindowSize
         {

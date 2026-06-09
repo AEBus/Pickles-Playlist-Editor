@@ -20,15 +20,12 @@ namespace Pickles_Playlist_Editor
             extract.Click += ExtractAudioMenuItem_Click;
             var normalize = new MenuFlyoutItem { Text = AppStrings.Menu_NormalizeAudio };
             normalize.Click += NormalizeAudioMenuItem_Click;
-            var increase = new MenuFlyoutItem { Text = AppStrings.Menu_IncreaseVolume };
-            increase.Click += IncreaseVolumeMenuItem_Click;
             var rename = new MenuFlyoutItem { Text = AppStrings.Menu_Rename };
             rename.Click += RenameMenuItem_Click;
             flyout.Items.Add(rename);
             flyout.Items.Add(new MenuFlyoutSeparator());
             flyout.Items.Add(extract);
             flyout.Items.Add(normalize);
-            flyout.Items.Add(increase);
             flyout.Items.Add(new MenuFlyoutSeparator());
             var eq = new MenuFlyoutItem { Text = AppStrings.Menu_ManageEQ };
             eq.Click += ApplyEqSettingsMenuItem_Click;
@@ -105,30 +102,6 @@ namespace Pickles_Playlist_Editor
             SetProgressBarPercent(100);
             RecomputePlaylistDurations();
             ShowOperationSummary(AppStrings.Summary_NormalizeAudio, normalized, targetSongs.Count, errors);
-        }
-
-        private async void IncreaseVolumeMenuItem_Click(object sender, object e)
-        {
-            var node = _contextMenuNode;
-            if (node == null) return;
-            var targetSongs = GetSongTargetsForNode(node);
-            if (targetSongs.Count == 0) { await ShowDialogAsync(AppStrings.Dlg_IncreaseVolume_Title, AppStrings.Dlg_NoSongs); return; }
-            SetProgressBarText(AppStrings.Prog_IncreasingVolume);
-            SetProgressBarPercent(0);
-            int updated = 0;
-            var errors = new List<string>();
-            await Task.Run(() =>
-            {
-                foreach (var (playlist, option) in targetSongs)
-                {
-                    try { IncreaseSongVolume(option, 10); updated++; }
-                    catch (Exception ex) { errors.Add($"{playlist.Name}/{option.Name}: {ex.Message}"); }
-                    finally { SetProgressBarPercent((int)((updated + errors.Count) / (double)targetSongs.Count * 100)); }
-                }
-            });
-            SetProgressBarPercent(100);
-            RecomputePlaylistDurations();
-            ShowOperationSummary(AppStrings.Summary_IncreaseVolume, updated, targetSongs.Count, errors);
         }
 
         private async void ApplyEqSettingsMenuItem_Click(object sender, object e)
@@ -211,33 +184,22 @@ namespace Pickles_Playlist_Editor
             try
             {
                 ScdOggExtractor.ExtractOgg(fullScdPath, ogg);
-                var scd = ScdFile.Import(fullScdPath);
-                if (scd.Audio.Count == 0) throw new InvalidOperationException("No audio entries in SCD.");
-                var old = scd.Audio[0];
-                scd.Replace(old, ScdVorbis.ImportOgg(ogg, old));
-                using var w = new BinaryWriter(new FileStream(fullScdPath, FileMode.Create, FileAccess.Write, FileShare.None));
-                scd.Write(w);
-            }
-            finally { if (Directory.Exists(tempRoot)) Directory.Delete(tempRoot, true); }
-        }
-
-        private static void IncreaseSongVolume(Option option, int db)
-        {
-            string fullScdPath = Path.Combine(Settings.PenumbraLocation, Settings.ModName, Playlist.GetScdPath(option));
-            if (!File.Exists(fullScdPath)) throw new FileNotFoundException("SCD not found.", fullScdPath);
-            string tempRoot = Path.Combine(Path.GetTempPath(), "pickles-increase-volume", Guid.NewGuid().ToString("N"));
-            Directory.CreateDirectory(tempRoot);
-            string ogg = Path.Combine(tempRoot, "source.ogg");
-            try
-            {
-                ScdOggExtractor.ExtractOgg(fullScdPath, ogg);
-                FFMpeg.AdjustVolume(ogg, db);
-                var scd = ScdFile.Import(fullScdPath);
-                if (scd.Audio.Count == 0) throw new InvalidOperationException("No audio entries in SCD.");
-                var old = scd.Audio[0];
-                scd.Replace(old, ScdVorbis.ImportOgg(ogg, old));
-                using var w = new BinaryWriter(new FileStream(fullScdPath, FileMode.Create, FileAccess.Write, FileShare.None));
-                scd.Write(w);
+                // Normalize explicitly so the right-click action works regardless of the
+                // "Normalize volume" setting, then suppress ImportOgg's implicit pass so
+                // we don't normalize twice when that setting happens to be enabled.
+                FFMpeg.NormalizeVolume(ogg);
+                bool oldNorm = Settings.NormalizeVolume;
+                Settings.NormalizeVolume = false;
+                try
+                {
+                    var scd = ScdFile.Import(fullScdPath);
+                    if (scd.Audio.Count == 0) throw new InvalidOperationException("No audio entries in SCD.");
+                    var old = scd.Audio[0];
+                    scd.Replace(old, ScdVorbis.ImportOgg(ogg, old));
+                    using var w = new BinaryWriter(new FileStream(fullScdPath, FileMode.Create, FileAccess.Write, FileShare.None));
+                    scd.Write(w);
+                }
+                finally { Settings.NormalizeVolume = oldNorm; }
             }
             finally { if (Directory.Exists(tempRoot)) Directory.Delete(tempRoot, true); }
         }
