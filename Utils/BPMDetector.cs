@@ -12,10 +12,30 @@ namespace Pickles_Playlist_Editor.Utils
             Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
             "Pickles Playlist Editor");
 
-        private static PersistentDictionary<string, int> bpmCache = new PersistentDictionary<string, int>(
-            Path.Combine(EnsureDataDir(), "bpm_cache.dat"));
-        private static PersistentDictionary<string, int> durationCache = new PersistentDictionary<string, int>(
-            Path.Combine(s_dataDir, "duration_cache.dat"));
+        private static PersistentDictionary<string, int> bpmCache;
+        private static PersistentDictionary<string, int> durationCache;
+
+        static BPMDetector()
+        {
+            string dataDir = EnsureDataDir();
+            bpmCache = TryOpenOrRecreate(Path.Combine(dataDir, "bpm_cache.dat"));
+            durationCache = TryOpenOrRecreate(Path.Combine(dataDir, "duration_cache.dat"));
+        }
+
+        private static PersistentDictionary<string, int> TryOpenOrRecreate(string path)
+        {
+            try
+            {
+                return new PersistentDictionary<string, int>(path);
+            }
+            catch
+            {
+                // Cache file may be corrupt or from an incompatible version — delete and retry.
+                try { File.Delete(path); } catch { }
+                try { return new PersistentDictionary<string, int>(path); } catch { }
+                return null;
+            }
+        }
 
         private static string EnsureDataDir()
         {
@@ -37,7 +57,8 @@ namespace Pickles_Playlist_Editor.Utils
 
         internal static void MarkFirstTimeMessageShown()
         {
-            bpmCache["FIRST_TIME_MESSAGE_SHOWN"] = 7;
+            if (bpmCache != null)
+                bpmCache["FIRST_TIME_MESSAGE_SHOWN"] = 7;
         }
 
         private struct SongAttributes
