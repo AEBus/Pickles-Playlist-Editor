@@ -9,8 +9,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <ApplicationIcon>pickle.ico</ApplicationIcon>
-    <AssemblyVersion>2.3.1.0</AssemblyVersion>
-    <FileVersion>2.3.1.0</FileVersion>
+    <AssemblyVersion>2.3.2.0</AssemblyVersion>
+    <FileVersion>2.3.2.0</FileVersion>
     <PlatformTarget>x86</PlatformTarget>
     <WindowsPackageType>None</WindowsPackageType>
     <!-- Bundle the Windows App Runtime with the app so unpackaged builds don't
@@ -18,6 +18,11 @@
          Runtime is missing" prompt). Requires a RuntimeIdentifier. -->
     <RuntimeIdentifier>win-x86</RuntimeIdentifier>
     <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+    <!-- Without this, `dotnet publish` silently drops the app's own .pri resource
+         index and satellite resource folders for unpackaged (WindowsPackageType=None)
+         apps, causing Microsoft.ui.xaml.dll to fail at startup.
+         https://github.com/microsoft/WindowsAppSDK/issues/3718 -->
+    <EnableMsixTooling>true</EnableMsixTooling>
     <DefineConstants>$(DefineConstants);DISABLE_XAML_GENERATED_MAIN</DefineConstants>
   </PropertyGroup>
 
