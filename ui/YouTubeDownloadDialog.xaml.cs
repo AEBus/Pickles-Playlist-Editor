@@ -77,6 +77,8 @@ namespace Pickles_Playlist_Editor
 
             try
             {
+                await YtDlpService.EnsureUpToDateAsync();
+
                 var mode = ModeComboBox.SelectedIndex == 1 ? YtDownloadMode.Playlist : YtDownloadMode.Single;
 
                 var progress = new Progress<YtDlpProgressInfo>(info =>
