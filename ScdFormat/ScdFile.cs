@@ -188,7 +188,7 @@ namespace VfxEditor.ScdFormat {
                     throw new Exception("couldn't import ogg for " + path);
                 }
 
-                ApplyRecommendedProfile(file, file.Audio[0]);
+                file.ApplyCurrentSettings();
 
                 return file;
 
@@ -210,6 +210,11 @@ namespace VfxEditor.ScdFormat {
                 .DefaultIfEmpty( fileSize > currentOffset ? fileSize : ( int )streamLength )
                 .Min();
             return next;
+        }
+
+        public void ApplyCurrentSettings() {
+            if( Audio.Count == 0 ) return;
+            ApplyRecommendedProfile( this, Audio[0] );
         }
 
         private static void ApplyRecommendedProfile( ScdFile file, ScdAudioEntry audio ) {
@@ -390,7 +395,6 @@ namespace VfxEditor.ScdFormat {
             ( ( TrackModulationOffData )item.GetData() ).Carrier.Value = carrier;
             return item;
         }
-
         private static int PopulateOffsetPlaceholders<T>( BinaryWriter writer, List<T> items, bool defaultZero ) {
             if( items.Count == 0 ) return defaultZero ? 0 : ( int )writer.BaseStream.Position;
             var offset = writer.BaseStream.Position;
