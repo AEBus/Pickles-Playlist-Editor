@@ -188,42 +188,7 @@ namespace VfxEditor.ScdFormat {
                     throw new Exception("couldn't import ogg for " + path);
                 }
 
-                if( Pickles_Playlist_Editor.Settings.LoopSongs )
-                {
-                    file.Audio[0].LoopStart = 0;
-                    file.Audio[0].LoopEnd = file.Audio[0].Data.TimeToBytes( float.MaxValue );
-                }
-
-                file.Sounds[0].Attributes.Value |= SoundAttribute.Loop | SoundAttribute.Fixed_Position | SoundAttribute.Extra_Desc;
-                file.Sounds[0].Volume.Value = Pickles_Playlist_Editor.Settings.ScdVolumePercentage / 100f;
-                file.Sounds[0].BusNumber.Value = (byte)Pickles_Playlist_Editor.Settings.BusNumber;
-                if( Pickles_Playlist_Editor.Settings.FadeBackgroundMusic ) {
-                    file.Sounds[0].Attributes.Value |= SoundAttribute.Bus_Ducking;
-                    file.Sounds[0].BusDucking.Number.Value = 1;
-                    file.Sounds[0].BusDucking.FadeTime.Value = 1200;
-                    file.Sounds[0].BusDucking.Volume.Value = 0f;
-                } else {
-                    file.Sounds[0].Attributes.Value &= ~SoundAttribute.Bus_Ducking;
-                    file.Sounds[0].BusDucking.Number.Value = 0;
-                    file.Sounds[0].BusDucking.FadeTime.Value = 0;
-                    file.Sounds[0].BusDucking.Volume.Value = 1f;
-                }
-
-                if(Pickles_Playlist_Editor.Settings.FadeWithDistance) {
-                    file.Sounds[0].Attributes.Value &= ~SoundAttribute.Fixed_Position;
-                    file.Sounds[0].BusNumber.Value = 8;
-
-                    var panItem = new ScdTrackItem();
-                    panItem.Type.Value = TrackCmd.Panning;
-                    panItem.UpdateData();
-                    ( ( TrackParamData )panItem.GetData() ).Value.Value = 0f;
-                    ( ( TrackParamData )panItem.GetData() ).Time.Value = 0;
-                    file.Tracks[0].Items.Insert( file.Tracks[0].Items.Count - 1, panItem );
-
-                    var layoutData = ( LayoutPointData )file.Sounds[0].Layout.GetData();
-                    layoutData.MinRange.Value = 85f;
-                    layoutData.MaxRange.Value = 10f;
-                }
+                file.ApplyCurrentSettings();
 
                 return file;
 
@@ -232,6 +197,48 @@ namespace VfxEditor.ScdFormat {
             {
                 if (reader != null)
                     reader.Dispose();
+            }
+        }
+
+        // Applies the app's current settings (loop, volume, bus, fade) to this file's
+        // first sound. Assumes a default.scd-derived skeleton with one sound/track/audio.
+        public void ApplyCurrentSettings()
+        {
+            if( Pickles_Playlist_Editor.Settings.LoopSongs )
+            {
+                Audio[0].LoopStart = 0;
+                Audio[0].LoopEnd = Audio[0].Data.TimeToBytes( float.MaxValue );
+            }
+
+            Sounds[0].Attributes.Value |= SoundAttribute.Loop | SoundAttribute.Fixed_Position | SoundAttribute.Extra_Desc;
+            Sounds[0].Volume.Value = Pickles_Playlist_Editor.Settings.ScdVolumePercentage / 100f;
+            Sounds[0].BusNumber.Value = (byte)Pickles_Playlist_Editor.Settings.BusNumber;
+            if( Pickles_Playlist_Editor.Settings.FadeBackgroundMusic ) {
+                Sounds[0].Attributes.Value |= SoundAttribute.Bus_Ducking;
+                Sounds[0].BusDucking.Number.Value = 1;
+                Sounds[0].BusDucking.FadeTime.Value = 1200;
+                Sounds[0].BusDucking.Volume.Value = 0f;
+            } else {
+                Sounds[0].Attributes.Value &= ~SoundAttribute.Bus_Ducking;
+                Sounds[0].BusDucking.Number.Value = 0;
+                Sounds[0].BusDucking.FadeTime.Value = 0;
+                Sounds[0].BusDucking.Volume.Value = 1f;
+            }
+
+            if(Pickles_Playlist_Editor.Settings.FadeWithDistance) {
+                Sounds[0].Attributes.Value &= ~SoundAttribute.Fixed_Position;
+                Sounds[0].BusNumber.Value = 8;
+
+                var panItem = new ScdTrackItem();
+                panItem.Type.Value = TrackCmd.Panning;
+                panItem.UpdateData();
+                ( ( TrackParamData )panItem.GetData() ).Value.Value = 0f;
+                ( ( TrackParamData )panItem.GetData() ).Time.Value = 0;
+                Tracks[0].Items.Insert( Tracks[0].Items.Count - 1, panItem );
+
+                var layoutData = ( LayoutPointData )Sounds[0].Layout.GetData();
+                layoutData.MinRange.Value = 85f;
+                layoutData.MaxRange.Value = 10f;
             }
         }
 

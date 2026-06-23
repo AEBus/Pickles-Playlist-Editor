@@ -20,6 +20,9 @@ namespace Pickles_Playlist_Editor
                 playlist.Cleanup();
         }
 
+        // Rebuilds every library SCD's headers from the canonical default.scd plus the app's
+        // current settings, keeping each file's existing audio. Copies NumChannels from
+        // default.scd. Self-heals older files written with the now-fixed Bypass bug.
         public static void ConvertToStereo(Action<int> progress)
         {
             var allOptions = Playlist.GetAll().Values
@@ -27,6 +30,8 @@ namespace Pickles_Playlist_Editor
                 .ToList();
             int total = allOptions.Count;
             int done = 0;
+
+            byte[] defaultBytes = File.ReadAllBytes(Path.Combine(Directory.GetCurrentDirectory(), "default.scd"));
 
             foreach (var option in allOptions)
             {
@@ -38,21 +43,31 @@ namespace Pickles_Playlist_Editor
                     {
                         try
                         {
-                            ScdFile scd;
+                            // Read the existing file purely to recover its audio (read by offset,
+                            // so it survives any header misalignment from the old Bypass bug).
+                            ScdFile existing;
                             using (var reader = new BinaryReader(File.Open(scdPath, FileMode.Open)))
-                                scd = new ScdFile(reader, false);
+                                existing = new ScdFile(reader, false);
 
-                            if (scd.Audio.Count > 0)
-                                scd.Audio[0].NumChannels = 2;
-
-                            if (scd.Sounds.Count > 0)
+                            if (existing.Audio.Count == 0)
                             {
-                                scd.Sounds[0].Attributes.Value |= SoundAttribute.Bypass_PLIIz | SoundAttribute.Music | SoundAttribute.Fixed_Position;
-                                scd.Sounds[0].Attributes.Value &= ~SoundAttribute.Music_Surround;
+                                progress?.Invoke((int)(++done / (double)total * 100));
+                                continue;
                             }
 
+                            // Fresh canonical skeleton from default.scd.
+                            ScdFile rebuilt;
+                            using (var defReader = new BinaryReader(new MemoryStream(defaultBytes)))
+                                rebuilt = new ScdFile(defReader, false);
+
+                            int defChannels = rebuilt.Audio[0].NumChannels;
+                            rebuilt.Audio.Clear();
+                            rebuilt.Audio.Add(existing.Audio[0]);
+                            rebuilt.Audio[0].NumChannels = defChannels;
+                            rebuilt.ApplyCurrentSettings();
+
                             using (var writer = new BinaryWriter(File.Open(scdPath, FileMode.Create)))
-                                scd.Write(writer);
+                                rebuilt.Write(writer);
                         }
                         catch { }
                     }
