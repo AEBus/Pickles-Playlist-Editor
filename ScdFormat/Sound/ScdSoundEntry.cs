@@ -71,11 +71,11 @@ namespace VfxEditor.ScdFormat {
         public SoundTracks Tracks = new();
 
         private bool RoutingEnabled => Attributes.Value.HasFlag( SoundAttribute.Exist_Routing_Setting );
-        private bool BusDuckingEnabled { get { return true; } }
+        private bool BusDuckingEnabled => Attributes.Value.HasFlag( SoundAttribute.Bus_Ducking );
         private bool AccelerationEnabled => Attributes.Value.HasFlag( SoundAttribute.Acceleration );
         private bool AtomosEnabled => Attributes.Value.HasFlag( SoundAttribute.Atomosgear );
         private bool ExtraEnabled => Attributes.Value.HasFlag( SoundAttribute.Extra_Desc );
-        private bool BypassEnabled { get { return true; } }
+        private bool BypassEnabled => Attributes.Value.HasFlag( SoundAttribute.Bypass_PLIIz );
         private bool RandomTracksEnabled => Type.Value == SoundType.Random || Type.Value == SoundType.Cycle || Type.Value == SoundType.GroupRandom || Type.Value == SoundType.GroupOrder;
         private bool IsEmptyLoop => Type.Value == SoundType.Empty && Attributes.Value.HasFlag( SoundAttribute.Loop );
 

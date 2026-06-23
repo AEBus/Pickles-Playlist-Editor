@@ -182,8 +182,6 @@ namespace VfxEditor.ScdFormat {
                 {
                     file.Audio.Clear();
                     file.Audio.Add(newEntry);
-                    file.Attributes[0].Version.Value = 1;
-                    file.Attributes[0].ConditionFirst.Value = 0;
                 }
                 else
                 {
